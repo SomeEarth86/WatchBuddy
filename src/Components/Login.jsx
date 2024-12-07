@@ -3,15 +3,24 @@ import React, { useRef, useState } from 'react'
 import Header from './Header'
 import { validate } from '../utils/validate'
 import { auth } from '../utils/Firebase'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addUser } from '../utils/userSlice';
+
 
 
 const Login = () => {
+
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
     const [isSignIn, setisSignIn] = useState(true)
     const [message, setMessage] = useState(null)
 
     const email = useRef(null)
     const password = useRef(null)
+    const name = useRef(null)
 
     const handleSubmit = () => {
 
@@ -21,18 +30,30 @@ const Login = () => {
         if (msg != null) return;
 
         if (!isSignIn) {
+            //signing up new user
             createUserWithEmailAndPassword(auth, email.current.value, password.current.value)
                 .then((userCredential) => {
                     // Signed up 
                     const user = userCredential.user;
+                    updateProfile(user, {
+                        displayName: name.current.value,
+                        photoURL: "https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o=",
+                    }).then(() => {
+                        // Profile updated!
+                        const { uid, email, displayName, photoURL } = auth.currentUser;
+                        dispatch(
+                            addUser({ uid: uid, email: email, displayName: displayName, photoURL: photoURL }))
+                        navigate("/browse")
+                    }).catch((error) => {
+                        // An error occurred
 
+                    });
 
-                    // ...
                 })
                 .catch((error) => {
                     const errorCode = error.code;
                     const errorMessage = error.message;
-                    // ..
+                    setMessage(errorMessage)
                 });
         }
         else {
@@ -40,13 +61,12 @@ const Login = () => {
                 .then((userCredential) => {
                     // Signed in 
                     const user = userCredential.user;
-
-
-                    // ...
+                    navigate("/browse")
                 })
                 .catch((error) => {
                     const errorCode = error.code;
                     const errorMessage = error.message;
+                    setMessage(errorMessage)
                 });
         }
 
@@ -70,6 +90,7 @@ const Login = () => {
                 {!isSignIn
                     &&
                     <input type="text"
+                        ref={name}
                         className='px-3 py-3 mb-4 w-full bg-gray-800'
                         placeholder='Full Name'
                     />
@@ -93,12 +114,12 @@ const Login = () => {
 
                 <button
                     onClick={handleSubmit}
-                    className='w-full mt-6  bg-red-700 py-3'>{isSignIn ? "Sign in" : "Sign up"}</button>
+                    className='w-full mt-6 bg-red-700 py-3'>{isSignIn ? "Sign in" : "Sign up"}</button>
 
                 <p
-                    className='cursor-pointer mt-6'
+                    className='cursor-pointer mt-6 underline'
                     onClick={toggleSignIn}
-                >{!isSignIn ? "Already User ? Sign In" : "New to WatchBuddy ? Sign up now"}</p>
+                >{!isSignIn ? "Already User ? Sign In " : "New to WatchBuddy ? Sign up now"}</p>
             </form>
 
 
