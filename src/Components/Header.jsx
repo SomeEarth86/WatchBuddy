@@ -1,20 +1,34 @@
 /* eslint-disable no-unused-vars */
-import { signOut } from 'firebase/auth';
-import React from 'react'
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth } from '../utils/Firebase';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { addUser, removeUser } from '../utils/userSlice';
 
 const Header = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const user = useSelector(store => store.user);
     const handleSignOut = () => {
         signOut(auth).then(() => {
-            navigate("/")
         }).catch((error) => {
             // An error happened. error page needed 
         });
     }
+
+    useEffect(() => {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const { uid, email, displayName, photoURL } = user;
+                dispatch(addUser({ uid: uid, email: email, displayName: displayName, photoURL: photoURL }))
+                navigate("/browse")
+            } else {
+                dispatch(removeUser());
+                navigate("/")
+            }
+        });
+    }, [])
 
     return (
         <div className='w-full z-10 px-6 absolute bg-gradient-to-b from-black flex justify-between'>
